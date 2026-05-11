@@ -18,6 +18,12 @@ https://raw.githubusercontent.com/YOUR_USERNAME/ai-shorts-factory/main/scripts/s
 
 Set `GITHUB_REPO_URL` to your clone URL.
 
+`setup_vast.sh` supports both provisioning modes:
+
+- **Automatic provisioning**: if `PROJECT_DIR` is missing and `GITHUB_REPO_URL` is set, it clones into `PROJECT_DIR`.
+- **Manual existing-repo**: if running from `scripts/setup_vast.sh` inside an existing checkout, it auto-detects the repo root (`requirements.txt`, `app/`, `pipeline/`) and uses it as `PROJECT_DIR` unless user provided `PROJECT_DIR`.
+- **Skip clone**: with `SKIP_GIT_CLONE=true`, clone is disabled and `PROJECT_DIR` must already exist.
+
 ## 4. Rent a suitable GPU
 
 Prefer RTX 4090 24GB+ and enough disk for ComfyUI models you plan to install.
@@ -36,6 +42,26 @@ Idempotent behavior:
 ```bash
 cd /workspace/ai-shorts-factory
 bash scripts/status.sh
+```
+
+### Manual existing-repo setup example
+
+```bash
+cd /workspace/VideoCreator/ai-shorts-factory
+export SKIP_GIT_CLONE=true
+export PROJECT_DIR=/workspace/VideoCreator/ai-shorts-factory
+export COMFYUI_DIR=/workspace/ComfyUI
+export APP_PORT=7860
+export COMFYUI_PORT=8188
+export COMFYUI_URL=http://127.0.0.1:8188
+export APP_HOST=0.0.0.0
+export AUTO_START=true
+export DOWNLOAD_MODELS=false
+export VIDEO_BACKEND=placeholder
+export COMFYUI_MULTI_GPU=false
+export COMFYUI_WORKERS=1
+export COMFYUI_URLS=http://127.0.0.1:8188
+bash scripts/setup_vast.sh
 ```
 
 ## 7. Open the public URL for port 7860

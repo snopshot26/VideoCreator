@@ -117,6 +117,12 @@ PROVISIONING_SCRIPT=https://raw.githubusercontent.com/YOUR_USERNAME/ai-shorts-fa
 2. Paste `PROVISIONING_SCRIPT` raw URL to `scripts/setup_vast.sh` on your branch.
 3. Use Jupyter + SSH image with CUDA drivers.
 
+### `setup_vast.sh` modes
+
+- **Automatic provisioning**: if `PROJECT_DIR` is missing and `GITHUB_REPO_URL` is set, the repo is cloned into `PROJECT_DIR`.
+- **Manual existing-repo mode**: when run from `scripts/setup_vast.sh` inside a valid checkout, repo root is auto-detected (`requirements.txt`, `app/`, `pipeline/`) and used as `PROJECT_DIR` unless explicitly provided.
+- **No-clone mode**: set `SKIP_GIT_CLONE=true` to never clone; `PROJECT_DIR` must already exist.
+
 ### How to start / stop on the instance
 
 ```bash
@@ -126,6 +132,26 @@ bash scripts/status.sh
 bash scripts/stop_all.sh
 bash scripts/restart_all.sh
 bash scripts/tail_logs.sh
+```
+
+### Manual existing-repo setup example
+
+```bash
+cd /workspace/VideoCreator/ai-shorts-factory
+export SKIP_GIT_CLONE=true
+export PROJECT_DIR=/workspace/VideoCreator/ai-shorts-factory
+export COMFYUI_DIR=/workspace/ComfyUI
+export APP_PORT=7860
+export COMFYUI_PORT=8188
+export COMFYUI_URL=http://127.0.0.1:8188
+export APP_HOST=0.0.0.0
+export AUTO_START=true
+export DOWNLOAD_MODELS=false
+export VIDEO_BACKEND=placeholder
+export COMFYUI_MULTI_GPU=false
+export COMFYUI_WORKERS=1
+export COMFYUI_URLS=http://127.0.0.1:8188
+bash scripts/setup_vast.sh
 ```
 
 Logs on Vast: `/workspace/logs/setup_vast.log`, `comfyui.log` (single-GPU) or `comfyui_gpu0.log` / `comfyui_gpu1.log` (multi-GPU), `ai-shorts-factory.log`.

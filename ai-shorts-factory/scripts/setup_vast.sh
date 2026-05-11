@@ -9,14 +9,24 @@ echo "Starting Vast.ai setup at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "NOTE: This script is non-destructive: it does not rm -rf ComfyUI, models, outputs, or your repo."
 echo "      It only installs packages, ensures venvs exist, and optionally starts services."
 
-export PROJECT_DIR="${PROJECT_DIR:-/workspace/ai-shorts-factory}"
+DEFAULT_PROJECT_DIR="/workspace/ai-shorts-factory"
+PROJECT_DIR_FROM_USER="${PROJECT_DIR:-}"
+if [ -n "$PROJECT_DIR_FROM_USER" ]; then
+  export PROJECT_DIR="$PROJECT_DIR_FROM_USER"
+else
+  export PROJECT_DIR="$DEFAULT_PROJECT_DIR"
+fi
 export COMFYUI_DIR="${COMFYUI_DIR:-/workspace/ComfyUI}"
 export APP_PORT="${APP_PORT:-7860}"
 export COMFYUI_PORT="${COMFYUI_PORT:-8188}"
+export COMFYUI_MULTI_GPU="${COMFYUI_MULTI_GPU:-false}"
+export COMFYUI_WORKERS="${COMFYUI_WORKERS:-1}"
+export COMFYUI_URLS="${COMFYUI_URLS:-http://127.0.0.1:${COMFYUI_PORT}}"
 export AUTO_START="${AUTO_START:-true}"
 export DOWNLOAD_MODELS="${DOWNLOAD_MODELS:-false}"
 export VIDEO_BACKEND="${VIDEO_BACKEND:-placeholder}"
 export COMFYUI_URL="${COMFYUI_URL:-http://127.0.0.1:${COMFYUI_PORT}}"
+export SKIP_GIT_CLONE="${SKIP_GIT_CLONE:-false}"
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
@@ -26,13 +36,30 @@ apt-get install -y \
 
 mkdir -p /workspace/logs /workspace/models_cache
 
-# Clone project when missing (typical Vast on-start provisioning).
-if [ ! -d "$PROJECT_DIR" ]; then
+# Detect repo root when script runs from an existing project checkout:
+# scripts/setup_vast.sh -> parent directory must contain requirements.txt, app/, pipeline/.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DETECTED_REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+if [ -z "$PROJECT_DIR_FROM_USER" ] && [ -f "$DETECTED_REPO_ROOT/requirements.txt" ] && [ -d "$DETECTED_REPO_ROOT/app" ] && [ -d "$DETECTED_REPO_ROOT/pipeline" ]; then
+  export PROJECT_DIR="$DETECTED_REPO_ROOT"
+  echo "Detected existing project repo at: $PROJECT_DIR"
+fi
+
+if [ "$SKIP_GIT_CLONE" = "true" ] || [ "$SKIP_GIT_CLONE" = "1" ] || [ "$SKIP_GIT_CLONE" = "yes" ]; then
+  if [ ! -d "$PROJECT_DIR" ]; then
+    echo "SKIP_GIT_CLONE=true but PROJECT_DIR does not exist."
+    exit 1
+  fi
+elif [ ! -d "$PROJECT_DIR" ]; then
   if [ -n "${GITHUB_REPO_URL:-}" ]; then
-    git clone "$GITHUB_REPO_URL" "$PROJECT_DIR"
+    export GIT_TERMINAL_PROMPT=0
+    if ! git clone "$GITHUB_REPO_URL" "$PROJECT_DIR"; then
+      echo "Git clone failed. If the repository is private, make it public or use a GitHub token. You can also upload/copy the repo manually and rerun with SKIP_GIT_CLONE=true PROJECT_DIR=/path/to/repo."
+      exit 1
+    fi
   else
-    echo "NOTE: PROJECT_DIR does not exist and GITHUB_REPO_URL is empty."
-    echo "If the repo is bind-mounted or copied into $PROJECT_DIR, continue."
+    echo "ERROR: PROJECT_DIR does not exist and GITHUB_REPO_URL is empty."
+    exit 1
   fi
 fi
 

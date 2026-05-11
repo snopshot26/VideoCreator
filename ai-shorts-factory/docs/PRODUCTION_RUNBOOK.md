@@ -1,5 +1,33 @@
 # Production runbook (Vast / GPU server)
 
+## Provisioning (`setup_vast.sh`)
+
+`scripts/setup_vast.sh` is idempotent and supports:
+
+- **Automatic provisioning**: clone from `GITHUB_REPO_URL` when `PROJECT_DIR` is missing.
+- **Manual existing-repo mode**: detects repo root automatically when run from `scripts/setup_vast.sh`.
+- **No-clone mode**: `SKIP_GIT_CLONE=true` requires an existing `PROJECT_DIR`.
+
+Manual existing-repo example:
+
+```bash
+cd /workspace/VideoCreator/ai-shorts-factory
+export SKIP_GIT_CLONE=true
+export PROJECT_DIR=/workspace/VideoCreator/ai-shorts-factory
+export COMFYUI_DIR=/workspace/ComfyUI
+export APP_PORT=7860
+export COMFYUI_PORT=8188
+export COMFYUI_URL=http://127.0.0.1:8188
+export APP_HOST=0.0.0.0
+export AUTO_START=true
+export DOWNLOAD_MODELS=false
+export VIDEO_BACKEND=placeholder
+export COMFYUI_MULTI_GPU=false
+export COMFYUI_WORKERS=1
+export COMFYUI_URLS=http://127.0.0.1:8188
+bash scripts/setup_vast.sh
+```
+
 ## Start
 
 ```bash
