@@ -26,9 +26,10 @@ stop_pidfile() {
 }
 
 stop_pidfile "$LOG_DIR/ai-shorts-factory.pid" "AI Shorts Factory"
-stop_pidfile "$LOG_DIR/comfyui.pid" "ComfyUI"
+stop_pidfile "$LOG_DIR/comfyui.pid" "ComfyUI (single)"
+stop_pidfile "$LOG_DIR/comfyui_gpu0.pid" "ComfyUI GPU0"
+stop_pidfile "$LOG_DIR/comfyui_gpu1.pid" "ComfyUI GPU1"
 
-# Narrow fallback only if PID files were missing (e.g. manual start).
 if pgrep -f "python app/webui.py" >/dev/null 2>&1; then
   pkill -f "python app/webui.py" 2>/dev/null || true
 fi
@@ -39,4 +40,4 @@ if pgrep -f "ComfyUI.*main.py" >/dev/null 2>&1; then
   pkill -f "ComfyUI.*main.py" 2>/dev/null || true
 fi
 
-echo "Stopped AI Shorts Factory and ComfyUI (if they were running)."
+echo "Stopped AI Shorts Factory and ComfyUI workers (if they were running)."

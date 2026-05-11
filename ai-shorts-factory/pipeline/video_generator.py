@@ -8,8 +8,9 @@ from typing import Any
 
 from loguru import logger
 
-from app.config import AppConfig, ModelsConfig, project_root, resolve_path
+from app.config import AppConfig, ModelsConfig, comfy_base_urls, project_root, resolve_path
 from pipeline.comfy_client import ComfyUIClient, inject_prompts, strip_meta_keys
+from pipeline.comfy_pool import pick_healthy_comfy_base_url
 from pipeline.ffmpeg_util import ffmpeg_available, run_ffmpeg
 
 
@@ -109,16 +110,20 @@ def generate_raw_video(
         _placeholder_video(raw_path, duration_seconds, w, h, title_file)
         return raw_path, VideoBackend.PLACEHOLDER, msg
 
-    client = ComfyUIClient(cfg.comfyui.url)
-    if not client.health_check():
+    bases = comfy_base_urls(cfg)
+    base_url = pick_healthy_comfy_base_url(cfg)
+    if not base_url:
+        joined = ", ".join(bases) if bases else "(none configured)"
         msg = (
-            f"ComfyUI is not reachable at {cfg.comfyui.url}. "
-            "Start it with: bash scripts/start_comfyui.sh\n"
-            "Or switch video backend to placeholder in config/default.yaml."
+            f"No ComfyUI worker responded at: {joined}. "
+            "Start workers with bash scripts/start_all.sh (set COMFYUI_MULTI_GPU=true for 2 GPUs) "
+            "or switch VIDEO_BACKEND=placeholder."
         )
         logger.error(msg)
         _placeholder_video(raw_path, duration_seconds, w, h, title_file)
         return raw_path, VideoBackend.PLACEHOLDER, msg
+
+    client = ComfyUIClient(base_url)
 
     try:
         workflow = json.loads(wf_path.read_text(encoding="utf-8"))
@@ -150,8 +155,8 @@ def generate_raw_video(
         mp4s = [Path(f) for f in files if Path(f).suffix.lower() == ".mp4"]
         chosen = mp4s[0] if mp4s else Path(files[0])
         shutil.copy2(chosen, raw_path)
-        logger.info("ComfyUI video saved to {}", raw_path)
-        return raw_path, VideoBackend.COMFYUI, f"ComfyUI completed job {pid}"
+        logger.info("ComfyUI video saved to {} (worker {})", raw_path, base_url)
+        return raw_path, VideoBackend.COMFYUI, f"ComfyUI completed job {pid} on {base_url}"
     except Exception as e:
         msg = f"ComfyUI generation failed ({e}). Falling back to placeholder video."
         logger.exception(msg)

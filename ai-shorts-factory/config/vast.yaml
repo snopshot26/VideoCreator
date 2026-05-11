@@ -19,3 +19,15 @@ startup:
 runtime:
   default_video_backend: "placeholder"
   production_video_backend: "comfyui"
+
+# ComfyUI multi-worker reference (use env on the instance; see .env.vast.example).
+# Multi-GPU mode runs multiple ComfyUI servers in parallel; it does NOT combine 24GB + 24GB into 48GB VRAM for one model.
+comfyui:
+  multi_gpu: false
+  workers:
+    - gpu_id: 0
+      port: 8188
+      url: "http://127.0.0.1:8188"
+    - gpu_id: 1
+      port: 8189
+      url: "http://127.0.0.1:8189"

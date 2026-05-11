@@ -13,7 +13,7 @@ from app.config import AppConfig, ModelsConfig, load_app_config, load_models_con
 from app.logger import attach_job_log_sink, detach_job_log_sink
 from pipeline import metadata as metadata_mod
 from pipeline.prompt_builder import build_prompts, save_prompt_artifacts
-from pipeline.comfy_client import ComfyUIClient
+from pipeline.comfy_pool import any_comfy_healthy
 from pipeline.publish_packager import hashtags_from_idea, write_publish_package
 from pipeline.renderer import render_final, write_captions_burned_copy
 from pipeline.script_generator import generate_script, save_script
@@ -190,8 +190,7 @@ def run_pipeline(
         )
         logger.info("Video step: {} ({})", vbackend.value, vmsg)
 
-        client = ComfyUIClient(cfg.comfyui.url)
-        comfy_reachable = client.health_check()
+        comfy_reachable = any_comfy_healthy(cfg)
         wmap = models_cfg.workflow_map("wan_t2v") or models_cfg.workflow_map("wan_i2v")
         prompt_node_configured = bool(wmap and wmap.prompt_node_id)
 
@@ -303,12 +302,34 @@ def run_pipeline(
         detach_job_log_sink(sink_id)
 
 
+def _batch_max_parallel(cfg: AppConfig, models_cfg: ModelsConfig) -> int:
+    import os
+
+    from app.config import comfy_base_urls
+    from pipeline.comfy_client import ComfyUIClient
+
+    w = int(os.environ.get("COMFYUI_WORKERS", str(cfg.comfyui.workers)))
+    w = max(1, w)
+    backend = (models_cfg.video_backend or "").strip().lower()
+    if backend != "comfyui":
+        return w
+    urls = comfy_base_urls(cfg)
+    healthy = sum(1 for u in urls if ComfyUIClient(u).health_check())
+    cap = max(1, healthy)
+    return max(1, min(w, cap))
+
+
 def run_batch(lines: list[str], cfg: AppConfig | None = None) -> Path:
+    from concurrent.futures import ThreadPoolExecutor
+
     cfg = cfg or load_app_config()
+    models_cfg = load_models_config()
     ts = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     batch_root = resolve_path(cfg, cfg.paths.outputs_dir) / f"batch_{ts}"
     batch_root.mkdir(parents=True, exist_ok=True)
     summary: list[dict[str, Any]] = []
+
+    tasks: list[tuple[int, str, Path, str]] = []
     job_idx = 0
     for line in lines:
         line = line.strip()
@@ -317,7 +338,29 @@ def run_batch(lines: list[str], cfg: AppConfig | None = None) -> Path:
         job_idx += 1
         sub = batch_root / f"job_{job_idx:03d}"
         jid = f"{ts}_batch_{job_idx:03d}"
-        res = run_pipeline(GenerateInput(idea=line), cfg=cfg, output_dir=sub, job_id=jid)
+        tasks.append((job_idx, line, sub, jid))
+
+    max_p = _batch_max_parallel(cfg, models_cfg)
+    max_workers = max(1, min(max_p, len(tasks))) if tasks else 1
+
+    def _run_one(t: tuple[int, str, Path, str]) -> tuple[int, JobResult]:
+        jidx, idea, sub, jid = t
+        res = run_pipeline(
+            GenerateInput(idea=idea),
+            cfg=cfg,
+            models_cfg=models_cfg,
+            output_dir=sub,
+            job_id=jid,
+        )
+        return jidx, res
+
+    if len(tasks) <= 1 or max_workers <= 1:
+        results = [_run_one(t) for t in tasks]
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            results = list(pool.map(_run_one, tasks))
+
+    for job_idx, res in sorted(results, key=lambda x: x[0]):
         summary.append({"job": job_idx, "job_id": res.job_id, "status": res.status, "path": str(res.output_dir)})
 
     import csv, json as json_lib

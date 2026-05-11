@@ -9,10 +9,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from app.config import load_app_config, load_models_config, resolve_path
+from app.config import comfy_base_urls, load_app_config, load_models_config, resolve_path
 from app.version import __version__
 from app.system_info import gpu_payload
-from pipeline.comfy_client import ComfyUIClient
+from pipeline.comfy_pool import comfy_worker_health
 from pipeline.orchestrator import GenerateInput, JobResult, run_pipeline
 
 router = APIRouter()
@@ -50,15 +50,19 @@ def _safe_job_path(job_id: str) -> Path:
 def health() -> dict[str, Any]:
     cfg = load_app_config()
     models = load_models_config()
-    comfy = ComfyUIClient(cfg.comfyui.url).health_check()
+    urls = comfy_base_urls(cfg)
+    detail = comfy_worker_health(cfg)
+    reachable = any(detail.values()) if urls else False
     vb = (models.video_backend or "comfyui").strip().lower()
     return {
         "status": "ok",
         "app": "ai-shorts-factory",
         "version": __version__,
         "video_backend": vb,
-        "comfyui_url": cfg.comfyui.url,
-        "comfyui_reachable": comfy,
+        "comfyui_url": urls[0] if urls else cfg.comfyui.url,
+        "comfyui_urls": urls,
+        "comfyui_workers_detail": detail,
+        "comfyui_reachable": reachable,
     }
 
 

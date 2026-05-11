@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from app.config import AppConfig, ModelsConfig, load_app_config, load_models_config, project_root
-from pipeline.comfy_client import ComfyUIClient
+from app.config import AppConfig, ModelsConfig, comfy_base_urls, load_app_config, load_models_config, project_root
+from pipeline.comfy_pool import any_comfy_healthy, comfy_worker_health
 from pipeline.ffmpeg_util import ffmpeg_available
 from pipeline.video_generator import VideoBackend
 
@@ -40,8 +40,9 @@ def _nvidia_detected() -> bool:
 def readiness_snapshot(cfg: AppConfig | None = None, models: ModelsConfig | None = None) -> dict[str, Any]:
     cfg = cfg or load_app_config()
     models = models or load_models_config()
-    comfy = ComfyUIClient(cfg.comfyui.url)
-    comfy_ok = comfy.health_check()
+    urls = comfy_base_urls(cfg)
+    health = comfy_worker_health(cfg)
+    comfy_ok = any(health.values()) if urls else False
     wf = (project_root() / cfg.comfyui.default_workflow).resolve()
     wf_ok = wf.exists()
     wmap = models.workflow_map("wan_t2v") or models.workflow_map("wan_i2v")
@@ -72,18 +73,22 @@ def readiness_snapshot(cfg: AppConfig | None = None, models: ModelsConfig | None
         "comfy_models_heuristic": models_hint,
         "outputs_dir": str(out_dir),
         "production_ready": production_ready,
-        "comfyui_url": cfg.comfyui.url,
+        "comfyui_urls": urls,
+        "comfyui_workers_detail": health,
+        "comfyui_url": urls[0] if urls else cfg.comfyui.url,
     }
 
 
 def readiness_markdown(snap: dict[str, Any]) -> str:
     pr = "yes" if snap.get("production_ready") else "no"
     cu = "connected" if snap.get("comfyui_connected") else "disconnected"
+    workers = snap.get("comfyui_workers_detail") or {}
+    wdetail = ", ".join(f"{u}: {'up' if ok else 'down'}" for u, ok in workers.items()) or "n/a"
     gpu = "detected" if snap.get("gpu_detected") else "not detected"
     lines = [
         "### System status",
         f"- **App**: running",
-        f"- **ComfyUI**: {cu}",
+        f"- **ComfyUI**: {cu} ({wdetail})",
         f"- **Video backend**: `{snap.get('video_backend', '?')}`",
         f"- **GPU**: {gpu}",
         f"- **FFmpeg**: {'ok' if snap.get('ffmpeg_ok') else 'missing'}",

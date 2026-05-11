@@ -15,9 +15,14 @@ video:
   final_height: 1920
   fps: 24
 
+# ComfyUI: single URL via `url`, or multiple workers via `urls` / env COMFYUI_URLS (comma-separated).
+# Env: COMFYUI_URLS, COMFYUI_MULTI_GPU, COMFYUI_WORKERS (see .env.vast.example).
 comfyui:
   enabled: true
   url: "http://127.0.0.1:8188"
+  urls: []
+  multi_gpu: false
+  workers: 1
   default_workflow: "workflows/wan_t2v_vertical.json"
   timeout_seconds: 3600
 

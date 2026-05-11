@@ -128,7 +128,7 @@ bash scripts/restart_all.sh
 bash scripts/tail_logs.sh
 ```
 
-Logs on Vast: `/workspace/logs/setup_vast.log`, `comfyui.log`, `ai-shorts-factory.log`.
+Logs on Vast: `/workspace/logs/setup_vast.log`, `comfyui.log` (single-GPU) or `comfyui_gpu0.log` / `comfyui_gpu1.log` (multi-GPU), `ai-shorts-factory.log`.
 
 ### First placeholder video on Vast
 
@@ -155,6 +155,27 @@ See **`docs/VAST_SETUP.md`** and **`docs/TROUBLESHOOTING.md`**. Quick checks: `b
 ### Cost control
 
 Do **not** leave a rented GPU running 24/7 unless you need it. Generate, **download** outputs from `outputs/`, then stop or destroy the instance.
+
+### Multi-GPU ComfyUI (parallel workers, not pooled VRAM)
+
+With **`COMFYUI_MULTI_GPU=true`** and **≥2 GPUs** (`nvidia-smi -L`), `scripts/start_all.sh` starts:
+
+- GPU **0**: `CUDA_VISIBLE_DEVICES=0` → port **8188** → log `comfyui_gpu0.log`, PID `comfyui_gpu0.pid`
+- GPU **1**: `CUDA_VISIBLE_DEVICES=1` → port **8189** → log `comfyui_gpu1.log`, PID `comfyui_gpu1.pid`
+
+The app uses **`COMFYUI_URLS`** (comma-separated) and **round-robin** across healthy workers. **Two 24GB GPUs do not become 48GB for one model** — you get **two independent ComfyUI servers** for **parallel** jobs.
+
+**2× RTX 4090 example (Vast):** open TCP **7860**, **8188**, **8189** and set:
+
+```env
+COMFYUI_MULTI_GPU=true
+COMFYUI_WORKERS=2
+COMFYUI_URLS=http://127.0.0.1:8188,http://127.0.0.1:8189
+COMFYUI_PORT=8188
+COMFYUI_PORT_SECOND=8189
+```
+
+Verify workers: `bash scripts/test_multigpu_comfyui.sh`. Batch mode limits parallel jobs to **`COMFYUI_WORKERS`** and, for ComfyUI video, to the number of **reachable** worker URLs.
 
 ## First placeholder video (no ComfyUI)
 

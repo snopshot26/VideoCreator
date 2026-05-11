@@ -59,6 +59,12 @@ bash scripts/test_placeholder_generation.sh
 bash scripts/test_comfyui_connection.sh
 ```
 
+### Multi-GPU ComfyUI workers (after `COMFYUI_MULTI_GPU=true`)
+
+```bash
+bash scripts/test_multigpu_comfyui.sh
+```
+
 For other one-off checks, see `docs/USAGE.md`.
 
 ## Batch

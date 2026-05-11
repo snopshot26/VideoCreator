@@ -12,7 +12,7 @@ fi
 mkdir -p "$LOG_DIR"
 
 files=()
-for f in setup_vast.log comfyui.log ai-shorts-factory.log; do
+for f in setup_vast.log comfyui.log comfyui_gpu0.log comfyui_gpu1.log ai-shorts-factory.log; do
   if [ -f "$LOG_DIR/$f" ]; then
     files+=("$LOG_DIR/$f")
   fi

@@ -46,6 +46,9 @@ class VideoConfig(BaseModel):
 class ComfyUIConfig(BaseModel):
     enabled: bool = True
     url: str = "http://127.0.0.1:8188"
+    urls: list[str] = Field(default_factory=list)
+    multi_gpu: bool = False
+    workers: int = 1
     default_workflow: str = "workflows/wan_t2v_vertical.json"
     timeout_seconds: int = 3600
 
@@ -146,6 +149,21 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return data
 
 
+def comfy_base_urls(cfg: AppConfig) -> list[str]:
+    """Ordered ComfyUI HTTP bases: env COMFYUI_URLS / yaml urls, else single url."""
+    raw = [str(u).strip() for u in (cfg.comfyui.urls or []) if str(u).strip()]
+    if raw:
+        seen: set[str] = set()
+        out: list[str] = []
+        for u in raw:
+            if u not in seen:
+                seen.add(u)
+                out.append(u)
+        return out
+    u = (cfg.comfyui.url or "").strip()
+    return [u] if u else []
+
+
 def load_app_config() -> AppConfig:
     root = project_root()
     default_path = root / "config" / "default.yaml"
@@ -159,6 +177,24 @@ def load_app_config() -> AppConfig:
         if "comfyui" not in data:
             data["comfyui"] = {}
         data["comfyui"]["url"] = comfy_url
+
+    urls_csv = (os.environ.get("COMFYUI_URLS") or "").strip()
+    if urls_csv:
+        if "comfyui" not in data:
+            data["comfyui"] = {}
+        data["comfyui"]["urls"] = [x.strip() for x in urls_csv.split(",") if x.strip()]
+
+    mg = (os.environ.get("COMFYUI_MULTI_GPU") or "").strip().lower()
+    if mg in ("1", "true", "yes"):
+        if "comfyui" not in data:
+            data["comfyui"] = {}
+        data["comfyui"]["multi_gpu"] = True
+
+    cw = os.environ.get("COMFYUI_WORKERS")
+    if cw and cw.strip().isdigit():
+        if "comfyui" not in data:
+            data["comfyui"] = {}
+        data["comfyui"]["workers"] = int(cw.strip())
     # CLI/env overrides (priority per Vast spec: env after yaml overlays)
     host = os.environ.get("APP_HOST")
     port = os.environ.get("APP_PORT")

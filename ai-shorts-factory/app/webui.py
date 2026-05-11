@@ -19,7 +19,7 @@ from app.config import load_app_config, resolve_path
 from app.logger import setup_logging
 from app.readiness import readiness_markdown, readiness_snapshot
 from app.system_info import gpu_payload
-from pipeline.comfy_client import ComfyUIClient
+from pipeline.comfy_pool import any_comfy_healthy
 from pipeline.orchestrator import GenerateInput, run_pipeline
 
 
@@ -56,7 +56,7 @@ def run_generation(
 ):
     progress(0.05, desc="Validating…")
     cfg = load_app_config()
-    comfy_ok = ComfyUIClient(cfg.comfyui.url).health_check()
+    comfy_ok = any_comfy_healthy(cfg)
     gpu = gpu_payload()
 
     progress(0.15, desc="Generating…")

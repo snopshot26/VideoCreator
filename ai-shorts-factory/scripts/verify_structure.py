@@ -34,6 +34,7 @@ REQUIRED_FILES = [
     "scripts/test_comfyui_connection.sh",
     "scripts/smoke_test_production.sh",
     "scripts/smoke_test_production.py",
+    "scripts/test_multigpu_comfyui.sh",
     "app/webui.py",
     "app/api.py",
     "app/main.py",
