@@ -1,0 +1,9 @@
+{
+  "_comment": "Replace with exported LTX video+audio ComfyUI workflow API JSON.",
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "replace_with_ltx_checkpoint.safetensors"
+    }
+  }
+}

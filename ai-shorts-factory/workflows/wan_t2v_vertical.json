@@ -1,0 +1,9 @@
+{
+  "_comment": "Replace this file with your exported ComfyUI API workflow. Set prompt_node_id etc. in config/models.yaml.",
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "replace_with_your_checkpoint.safetensors"
+    }
+  }
+}

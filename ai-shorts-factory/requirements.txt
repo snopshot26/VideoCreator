@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+gradio
+pydantic
+pyyaml
+python-dotenv
+requests
+loguru
+Pillow
+numpy
+pyttsx3

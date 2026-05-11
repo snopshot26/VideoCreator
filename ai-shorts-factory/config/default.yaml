@@ -1,0 +1,57 @@
+server:
+  host: "0.0.0.0"
+  port: 7860
+
+paths:
+  outputs_dir: "outputs"
+  logs_dir: "logs"
+  workflows_dir: "workflows"
+  assets_music_dir: "assets/music"
+
+video:
+  default_duration_seconds: 15
+  default_aspect_ratio: "9:16"
+  final_width: 1080
+  final_height: 1920
+  fps: 24
+
+comfyui:
+  enabled: true
+  url: "http://127.0.0.1:8188"
+  default_workflow: "workflows/wan_t2v_vertical.json"
+  timeout_seconds: 3600
+
+script:
+  provider: "template"
+  language: "en"
+  style: "shorts"
+
+tts:
+  provider: "pyttsx3"
+  voice: "default"
+  speed: 1.0
+
+music:
+  enabled: true
+  provider: "placeholder"
+  volume: 0.15
+
+subtitles:
+  enabled: true
+  font_size: 64
+  position: "bottom"
+  burn_in: true
+
+render:
+  codec: "libx264"
+  crf: 18
+  preset: "medium"
+  audio_bitrate: "192k"
+
+safety:
+  add_ai_disclaimer_metadata: true
+  block_illegal_content: true
+
+platform_upload:
+  enabled: false
+  provider: "manual"

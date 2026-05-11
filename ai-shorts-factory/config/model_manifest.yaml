@@ -1,0 +1,9 @@
+# Optional automatic model downloads (used by scripts/download_models.sh).
+# Do not commit real URLs or weights to Git. Enable entries only after you accept model licenses.
+models:
+  - name: "wan_or_ltx_model_placeholder"
+    enabled: false
+    url: ""
+    target_path: "/workspace/ComfyUI/models/diffusion_models/model.safetensors"
+    sha256: ""
+    notes: "Fill official model URL manually after reading the license."

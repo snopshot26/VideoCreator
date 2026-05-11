@@ -1,0 +1,19 @@
+video_backend: "comfyui"
+
+workflows:
+  wan_t2v:
+    file: "workflows/wan_t2v_vertical.json"
+    prompt_node_id: null
+    negative_prompt_node_id: null
+    width_node_id: null
+    height_node_id: null
+    duration_node_id: null
+
+  wan_i2v:
+    file: "workflows/wan_i2v_vertical.json"
+    prompt_node_id: null
+    negative_prompt_node_id: null
+
+  ltx_video_audio:
+    file: "workflows/ltx_video_audio.json"
+    prompt_node_id: null

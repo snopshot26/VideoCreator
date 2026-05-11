@@ -1,0 +1,21 @@
+# Reference layout for Vast.ai (paths are informational; use env vars on the instance).
+vast:
+  workspace_dir: "/workspace"
+  project_dir: "/workspace/ai-shorts-factory"
+  comfyui_dir: "/workspace/ComfyUI"
+  logs_dir: "/workspace/logs"
+
+server:
+  app_host: "0.0.0.0"
+  app_port: 7860
+  comfyui_host: "0.0.0.0"
+  comfyui_port: 8188
+
+startup:
+  auto_start: true
+  download_models: false
+  install_custom_nodes: true
+
+runtime:
+  default_video_backend: "placeholder"
+  production_video_backend: "comfyui"

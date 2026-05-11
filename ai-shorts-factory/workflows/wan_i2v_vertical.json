@@ -1,0 +1,9 @@
+{
+  "_comment": "Replace with exported ComfyUI image-to-video workflow (vertical 9:16).",
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "replace_with_your_checkpoint.safetensors"
+    }
+  }
+}
